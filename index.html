@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Happy Birthday 🎂</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Poppins", sans-serif;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+      text-align: center;
+      color: #fff;
+      overflow-x: hidden;
+    }
+    .container { padding: 40px 20px; }
+    h1 { font-size: 3rem; }
+    h2 { font-size: 1.8rem; }
+    p { font-size: 1.5rem; font-weight: bold; }
+    img {
+      width: 250px; height: 250px;
+      border-radius: 50%; border: 5px solid #fff;
+    }
+    .footer { margin-top: 40px; font-size: 1.2rem; opacity: 0.9; }
+
+    /* Admin Panel */
+    #adminPanel {
+      position: fixed; top: 100px; left: 100px;
+      width: 280px; background: rgba(0,0,0,0.85);
+      color: #fff; padding: 15px; border-radius: 15px;
+      z-index: 9999; display: none; cursor: move;
+    }
+    #adminPanel input, #adminPanel textarea {
+      width: 100%; margin-bottom: 10px;
+    }
+
+    #loginBox {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      background: rgba(0,0,0,0.8); color: #fff;
+      padding: 20px; border-radius: 12px;
+      display: none; z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">Loading...</h1>
+    <h2 id="subtitle"></h2>
+    <img id="photo" src="" alt="Birthday">
+    <p id="message"></p>
+    <div class="footer" id="footer"></div>
+  </div>
+
+  <!-- Admin Panel -->
+  <div id="adminPanel">
+    <h3>Admin: Md Muhtamim Fuad Shishir</h3>
+    <input type="text" id="editTitle" placeholder="Edit Title">
+    <input type="text" id="editSubtitle" placeholder="Edit Subtitle">
+    <textarea id="editMessage" placeholder="Edit Message"></textarea>
+    <input type="text" id="editFooter" placeholder="Edit Footer">
+    <input type="text" id="editPhoto" placeholder="Photo URL">
+    <button onclick="saveChanges()">Save</button>
+  </div>
+
+  <!-- Login -->
+  <div id="loginBox">
+    <h3>🔑 Admin Login</h3>
+    <input type="password" id="password" placeholder="Enter Password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <script>
+    const REPO_OWNER = "mfshishir"; // 👈 change this
+    const REPO_NAME = "hbd1";        // 👈 change this
+    const FILE_PATH = "data.json";             // file to save edits
+    const BRANCH = "main";                     // or "master"
+    const TOKEN = "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";         // personal access token
+
+    // Load content from JSON
+    async function loadContent() {
+      const res = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`);
+      const data = await res.json();
+      document.getElementById("title").innerText = data.title;
+      document.getElementById("subtitle").innerText = data.subtitle;
+      document.getElementById("message").innerText = data.message;
+      document.getElementById("footer").innerText = data.footer;
+      document.getElementById("photo").src = data.photo;
+    }
+    loadContent();
+
+    // Admin Login
+    function login() {
+      const pass = document.getElementById("password").value;
+      if (pass === "shishir123") {
+        document.getElementById("adminPanel").style.display = "block";
+        document.getElementById("loginBox").style.display = "none";
+      } else { alert("Wrong Password!"); }
+    }
+
+    // Save Changes (Push to GitHub JSON file)
+    async function saveChanges() {
+      const newData = {
+        title: document.getElementById("editTitle").value || document.getElementById("title").innerText,
+        subtitle: document.getElementById("editSubtitle").value || document.getElementById("subtitle").innerText,
+        message: document.getElementById("editMessage").value || document.getElementById("message").innerText,
+        footer: document.getElementById("editFooter").value || document.getElementById("footer").innerText,
+        photo: document.getElementById("editPhoto").value || document.getElementById("photo").src
+      };
+
+      // get latest file SHA
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+        headers: { Authorization: `token ${TOKEN}` }
+      });
+      const file = await res.json();
+
+      // commit changes
+      await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+        method: "PUT",
+        headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: "Update content via admin panel",
+          content: btoa(JSON.stringify(newData, null, 2)),
+          sha: file.sha,
+          branch: BRANCH
+        })
+      });
+
+      alert("✅ Changes saved!");
+      loadContent();
+    }
+
+    // Shortcut Ctrl+E
+    document.addEventListener("keydown", function(event) {
+      if (event.ctrlKey && event.key.toLowerCase() === "e") {
+        event.preventDefault();
+        document.getElementById("loginBox").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>
